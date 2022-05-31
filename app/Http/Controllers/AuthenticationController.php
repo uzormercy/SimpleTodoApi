@@ -14,28 +14,30 @@ class AuthenticationController extends Controller
 
     public const TOKEN_KEY= "7RYfwRRyiMJAWhavDBBPfJzzhq9uUY5HaH4";
 
-    public function login(Request $request): \Illuminate\Http\JsonResponse
+    public function login(Request $request)
     {
+
         $validate = Validator::make($request->all(), [
             'email' => "required|string ",
             'password' => 'required|string'
         ]);
 
         if($validate->fails()){
-            return response()->json(['message' => "All fields are required"], 422);
+            return response()->json(['message' => $validate->messages()->first()], 422);
         }
         $user = User::whereEmail($request->email)->first();
         if(!$user){
             return response()->json(['message' => "Unknown user"], 422);
         }
-        if(Hash::check($request->password, $user->password)){
+        if(auth()->attempt(['email' => $request->email, 'password' => $request->password])){
             $token = $user->createToken(static::TOKEN_KEY)->accessToken;
-            $data = [
-                "user" => $user,
-                "token" => $token
-            ];
-            return response()->json($data, 200);
+            return response()->json([
+			  "token" => $token,
+				"user" => $user
+			], 200);
         }
+
+	return response()->json(["message" => "Invalid password or email address"], 422);
     }
 
     public function register(Request $request)
@@ -48,8 +50,10 @@ class AuthenticationController extends Controller
         ]);
 
         if ($validate->fails()){
-            return response()->json(['message' => "All fields are required"], 422);
+            return response()->json(['message' => $validate->messages()->first()], 422);
         }
+
+
 
         $user = User::create([
             'name' => $request->name,

@@ -16,6 +16,7 @@ class TodoController extends Controller
      */
     public function index()
     {
+
         $user = Auth::user();
         $todos = Todo::whereUserId($user->id)->latest()->get();
         return response()->json(['todos' => $todos], 200);
@@ -36,7 +37,7 @@ class TodoController extends Controller
             "description" => "required|string",
         ]);
         if($validate->fails()){
-            return response()->json(["message" => "Please fill in all required data"], 422);
+            return response()->json(["message" => $validate->messages()->first()], 422);
         }
         $todo = Todo::create([
             'title' => $request->title,
